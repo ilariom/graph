@@ -75,15 +75,87 @@ public:
         graph<T, V>::id_type root_;
         bool prune_ = false;
     };
-    
+
+    class node_iterator
+    {
+    public:
+        node_iterator(const graph<T, V>& G, graph<T, V>::id_type v = graph<T, V>::null_id)
+            : G_(G), v_(v)
+        { }
+        
+    public:
+        id_type operator*() const { return v_; }
+        
+        node_iterator& operator++()
+        {
+            ++v_;
+            while (!G_.is_valid(v_)) ++v_;
+
+            if (v_ >= G_.order())
+            {
+                v_ = graph<T, V>::null_id;
+            }
+
+            return *this;
+        }
+        
+        node_iterator& operator--()
+        {
+            --v_;
+            while (!G_.is_valid(v_)) --v_;
+            
+            if (v_ >= G_.order())
+            {
+                v_ = graph<T, V>::null_id;
+            }
+
+            return *this;
+        }
+
+        node_iterator& operator+(size_t n)
+        {
+            v_ += n;
+            while (!G_.is_valid(v_)) ++v_;
+
+            if (v_ >= G_.order())
+            {
+                v_ = graph<T, V>::null_id;
+            }
+
+            return *this;
+        }
+
+        node_iterator& operator-(size_t n)
+        {
+            v_ -= n;
+            while (!G_.is_valid(v_)) ++v_;
+
+            if (v_ >= G_.order())
+            {
+                v_ = graph<T, V>::null_id;
+            }
+
+            return *this;
+        }
+
+        bool operator==(const node_iterator& other) const { return v_ == other.v_; }
+        bool operator!=(const node_iterator& other) const { return !(*this == other); }
+        
+    private:
+        const graph<T, V>& G_;
+        graph<T, V>::id_type v_;
+    };
+
     using edge_type = std::pair<graph<T, V>::id_type, graph<T, V>::id_type>;
     
     class edge_iterator
     {
     public:
         edge_iterator(const graph<T, V>& G, graph<T, V>::id_type u = graph<T, V>::null_id)
-            : G_(G), u_(u)
-        { }
+            : G_(G), it_{ G_, u }
+        {
+            ++*this;
+        }
         
     public:
         edge_type operator*() const { return { u_, v_ }; }
@@ -94,14 +166,18 @@ public:
         
     private:
         const graph<T, V>& G_;
-        graph<T, V>::id_type u_;
-        graph<T, V>::id_type v_ = 0;
+        node_iterator it_;
+        size_t adjs_idx_ = 0;
+        id_type u_ = graph<T, V>::null_id;
+        id_type v_ = graph<T, V>::null_id;
     };
     
 public:
     id_type insert(typename std::conditional<std::is_arithmetic<value_type>::value, value_type, const value_type&>::type);
+    void erase(id_type);
+    void erase(const nodes_container&);
     size_type degree(id_type node) const { return in(node).size() + out(node).size(); }
-    size_type order() const { return objs_.size(); }
+    size_type order() const { return objs_.size() - removed_nodes_; }
     size_type size() const;
     bool empty() const { return order() == 0; }
     
@@ -129,13 +205,20 @@ public:
     
     edge_iterator edges_begin() const { return edge_iterator { *this, 0 }; }
     edge_iterator edges_end() const { return edge_iterator { *this }; }
+
+    node_iterator nodes_begin() const { return node_iterator { *this, 0 }; }
+    node_iterator nodes_end() const { return node_iterator { *this }; }
+
+    bool is_valid(id_type node) const { return invalid_nodes_.find(node) == invalid_nodes_.end(); }
     
 private:
     std::vector<nodes_container> adjs_;
     std::vector<nodes_container> radjs_;
     std::vector<std::unordered_map<id_type, weight_type>> ws_;
     std::vector<std::unordered_map<id_type, weight_type>> rws_;
-    std::vector<T> objs_;
+    std::vector<value_type> objs_;
+    std::unordered_set<id_type> invalid_nodes_;
+    size_type removed_nodes_ = 0;
     bool weighted_ = false;
 };
 
@@ -186,8 +269,11 @@ public:
     void append(id_type node, id_type child) { graph<T>::edge(node, child); };
 
     using graph<T>::insert;
+    using graph<T>::erase;
     using graph<T>::edges_begin;
     using graph<T>::edges_end;
+    using graph<T>::nodes_begin;
+    using graph<T>::nodes_end;
 
     using graph<T>::begin;
     using graph<T>::end;

@@ -1,4 +1,3 @@
-
 template<typename T, typename V>
 inline typename graph<T, V>::id_type graph<T, V>::insert(
     typename std::conditional<std::is_arithmetic<value_type>::value, value_type, 
@@ -12,6 +11,97 @@ inline typename graph<T, V>::id_type graph<T, V>::insert(
     objs_.push_back(val);
     
     return objs_.size() - 1;
+}
+
+template<typename T, typename V>
+inline void graph<T, V>::erase(id_type node)
+{
+    erase(nodes_container { node });
+}
+
+template<typename T, typename V>
+inline void graph<T, V>::erase(const nodes_container& nodes)
+{
+    auto repop_nodes = [] (std::vector<nodes_container>& dst, const nodes_container& nodes) mutable {
+        for (auto node = 0; node < dst.size(); ++node)
+        {
+            if (std::find(nodes.begin(), nodes.end(), node) != nodes.end())
+            {
+                dst[node].clear();
+            }
+        }
+        
+        for (auto k = 0; k < dst.size(); ++k)
+        {
+            nodes_container& src = dst[k];
+            nodes_container tmp;
+
+            for (auto node : src)
+            {
+                if (std::find(nodes.begin(), nodes.end(), node) != nodes.end())
+                {
+                    continue;
+                }
+
+                tmp.push_back(node);
+            }
+
+            src = std::move(tmp);
+        }
+    };
+
+    auto repop_weights = [] (std::vector<std::unordered_map<id_type, weight_type>>& dst, const nodes_container& nodes) mutable {
+        for (auto node = 0; node < dst.size(); ++node)
+        {
+            if (std::find(nodes.begin(), nodes.end(), node) != nodes.end())
+            {
+                dst[node].clear();
+            }
+        }
+
+        for (auto k = 0; k < dst.size(); ++k)
+        {
+            std::unordered_map<id_type, weight_type>& src = dst[k];
+            std::unordered_map<id_type, weight_type> tmp;
+
+            for (auto& pair : src)
+            {
+                auto node = pair.first;
+
+                if (std::find(nodes.begin(), nodes.end(), node) != nodes.end())
+                {
+                    continue;
+                }
+
+                tmp.insert(pair);
+            }
+
+            src = std::move(tmp);
+        }
+    };
+
+    size_type sz = order();
+
+    for (auto node = 0; node < objs_.size(); ++node)
+    {
+        if (std::find(nodes.begin(), nodes.end(), node) != nodes.end())
+        {
+            objs_[node] = value_type {};
+            sz--;
+        }
+    }
+
+    removed_nodes_ = order() - sz;
+
+    repop_nodes(adjs_, nodes);
+    repop_nodes(radjs_, nodes);
+    repop_weights(ws_, nodes);
+    repop_weights(rws_, nodes);
+
+    for (auto node : nodes)
+    {
+        invalid_nodes_.insert(node);
+    }
 }
 
 template<typename T, typename V>
@@ -181,10 +271,10 @@ inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_typ
         distance[other.curr_] = 0;
         
         for (auto bfstep = 1; bfstep < G_.order(); ++bfstep)
-            for (auto u = 0; u < G_.order(); ++u)
-                for (auto edgeIdx = 0; edgeIdx < G_.out(u).size(); ++edgeIdx)
+            for (auto edge = G_.edges_begin(); edge != G_.edges_end(); ++edge)
                 {
-                    auto v = G_.out(u)[edgeIdx];
+                    auto u = edge.first;
+                    auto v = edge.second;
                     
                     if (distance[u] + G_.weight(u, v) < distance[v])
                     {
@@ -193,16 +283,16 @@ inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_typ
                     }
                 }
                 
-        for (auto u = 0; u < G_.order(); ++u)
-            for (auto edgeIdx = 0; edgeIdx < G_.out(u).size(); ++edgeIdx)
+        for (auto edge = G_.edges_begin(); edge != G_.edges_end(); ++edge)
+        {
+            auto u = edge.first;
+            auto v = edge.second;
+            
+            if (distance[u] + G_.weight(u, v) < distance[v])
             {
-                auto v = G_.out(u)[edgeIdx];
-                
-                if (distance[u] + G_.weight(u, v) < distance[v])
-                {
-                    return path;
-                }
+                return path;
             }
+        }
             
         graph<T, V>::id_type v = curr_;
         
@@ -231,17 +321,24 @@ inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_typ
 template<typename T, typename V>
 inline typename graph<T, V>::edge_iterator& graph<T, V>::edge_iterator::operator++()
 {
-    ++u_;
-    ++v_;
-    
-    if (v_ >= G_.order())
-    {
-        v_ = 0;
-    }
-    
-    if (u_ >= G_.order())
+    if (it_ == G_.nodes_end())
     {
         u_ = graph<T, V>::null_id;
+        v_ = graph<T, V>::null_id;
+        return *this;
+    }
+
+    if (u_ != graph<T, V>::null_id && adjs_idx_ < G_.out(u_).size())
+    {
+        v_ = G_.out(u_)[adjs_idx_++];
+    }
+    else
+    {
+        u_ = *it_;
+        adjs_idx_ = 0;
+        v_ = G_.out(u_)[adjs_idx_++];
+
+        ++it_;
     }
     
     return *this;
