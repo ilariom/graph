@@ -86,57 +86,10 @@ public:
     public:
         id_type operator*() const { return v_; }
         
-        node_iterator& operator++()
-        {
-            ++v_;
-            while (!G_.is_valid(v_)) ++v_;
-
-            if (v_ >= G_.order())
-            {
-                v_ = graph<T, V>::null_id;
-            }
-
-            return *this;
-        }
-        
-        node_iterator& operator--()
-        {
-            --v_;
-            while (!G_.is_valid(v_)) --v_;
-            
-            if (v_ >= G_.order())
-            {
-                v_ = graph<T, V>::null_id;
-            }
-
-            return *this;
-        }
-
-        node_iterator& operator+(size_t n)
-        {
-            v_ += n;
-            while (!G_.is_valid(v_)) ++v_;
-
-            if (v_ >= G_.order())
-            {
-                v_ = graph<T, V>::null_id;
-            }
-
-            return *this;
-        }
-
-        node_iterator& operator-(size_t n)
-        {
-            v_ -= n;
-            while (!G_.is_valid(v_)) ++v_;
-
-            if (v_ >= G_.order())
-            {
-                v_ = graph<T, V>::null_id;
-            }
-
-            return *this;
-        }
+        node_iterator& operator++();
+        node_iterator& operator--();
+        node_iterator& operator+(size_t n);
+        node_iterator& operator-(size_t n);
 
         bool operator==(const node_iterator& other) const { return v_ == other.v_; }
         bool operator!=(const node_iterator& other) const { return !(*this == other); }
@@ -279,6 +232,7 @@ public:
     using graph<T>::end;
 
     using graph<T>::operator[];
+    using graph<T>::is_valid;
 };
 
 #include "graph.inl"

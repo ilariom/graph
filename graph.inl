@@ -319,6 +319,62 @@ inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_typ
 }
 
 template<typename T, typename V>
+inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator++()
+{
+     ++v_;
+    while (!G_.is_valid(v_)) ++v_;
+
+    if (v_ >= G_.order())
+    {
+        v_ = graph<T, V>::null_id;
+    }
+
+    return *this;
+}
+
+template<typename T, typename V>
+inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator--()
+{
+    --v_;
+    while (!G_.is_valid(v_)) --v_;
+    
+    if (v_ >= G_.order())
+    {
+        v_ = graph<T, V>::null_id;
+    }
+
+    return *this;
+}
+
+template<typename T, typename V>
+inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator+(size_t n)
+{
+    v_ += n;
+    while (!G_.is_valid(v_)) ++v_;
+
+    if (v_ >= G_.order())
+    {
+        v_ = graph<T, V>::null_id;
+    }
+
+    return *this;
+}
+
+template<typename T, typename V>
+inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator-(size_t n)
+{
+    v_ -= n;
+    while (!G_.is_valid(v_)) ++v_;
+
+    if (v_ >= G_.order())
+    {
+        v_ = graph<T, V>::null_id;
+    }
+
+    return *this;
+}
+
+template<typename T, typename V>
 inline typename graph<T, V>::edge_iterator& graph<T, V>::edge_iterator::operator++()
 {
     if (it_ == G_.nodes_end())
