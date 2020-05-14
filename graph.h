@@ -166,6 +166,35 @@ using digraph = graph<value_type>;
 template<typename value_type, typename weight_type>
 using weighted_undirected_graph = undirected_graph<value_type, weight_type>;
 
+template<typename T>
+class tree : private graph<T>
+{
+public:
+    using value_type = typename graph<T>::value_type;
+    using size_type = typename graph<T>::size_type;
+    using id_type = typename graph<T>::id_type;
+    using nodes_container = typename graph<T>::nodes_container;
+
+    using graph<T>::null_id;
+
+public:
+    size_type order() const { return graph<T>::order(); }
+    size_type size() const { return order() > 0 ? order() - 1 : 0; }
+
+    id_type parent(id_type node) const { return graph<T>::in(node).size() > 0 ? graph<T>::out(node)[0] : tree<T>::null_id; }
+    const nodes_container& children(id_type node) const { return graph<T>::out(node); }
+    void append(id_type node, id_type child) { graph<T>::edge(node, child); };
+
+    using graph<T>::insert;
+    using graph<T>::edges_begin;
+    using graph<T>::edges_end;
+
+    using graph<T>::begin;
+    using graph<T>::end;
+
+    using graph<T>::operator[];
+};
+
 #include "graph.inl"
 
 } // namespace estd
