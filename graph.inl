@@ -273,8 +273,8 @@ inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_typ
         for (auto bfstep = 1; bfstep < G_.order(); ++bfstep)
             for (auto edge = G_.edges_begin(); edge != G_.edges_end(); ++edge)
                 {
-                    auto u = edge.first;
-                    auto v = edge.second;
+                    auto u = (*edge).first;
+                    auto v = (*edge).second;
                     
                     if (distance[u] + G_.weight(u, v) < distance[v])
                     {
@@ -285,8 +285,8 @@ inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_typ
                 
         for (auto edge = G_.edges_begin(); edge != G_.edges_end(); ++edge)
         {
-            auto u = edge.first;
-            auto v = edge.second;
+            auto u = (*edge).first;
+            auto v = (*edge).second;
             
             if (distance[u] + G_.weight(u, v) < distance[v])
             {
