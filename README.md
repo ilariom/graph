@@ -9,9 +9,9 @@ You can easily create graph instances, as well as copy or move them.
 // but they're still just slight modifications of that one
 estd::graph<std::string> G;
 estd::digraph<int> DG;
-estd::weighted_digraph<float> WDG;
+estd::weighted_digraph<float, ssize_t> WDG;
 estd::undirected_graph<std::vector<uint32_t>> UG;
-estd::weighted_undirected_graph<std::function<void()> WUG;
+estd::weighted_undirected_graph<std::function<void(), ssize_t> WUG;
 estd::tree<int> T;
 
 // Inserting nodes, edges or removing them is straightforward
@@ -40,6 +40,13 @@ T.append(hello_id, node); // trees use append instead of edge
 auto par = T.parent(node);
 const auto& children = T.children(node);
 
+// You may check if a node has no parent by testing equality
+// with the special id estd::graph<T>::null_id
+if (T.parent(node) == estd::tree<std::string>::null_id)
+{
+   // It's the root!
+}
+
 // Finally, you can access the content with the subscript operator
 auto& content = G[node]; // content == "node"
 ```
@@ -63,7 +70,7 @@ for (auto it = G.edges_begin(); it != G.edges_end(); ++it)
 
 // Perform a visit through the graph, backed by DFS, starting from root id.
 // BFS is also available
-for (auto it = G.begin<estd::search_algorithm::dfs>(root); it != G.end<estd::search_algorithm>(); ++it)
+for (auto it = G.begin<estd::search_algorithm::dfs>(root); it != G.end<estd::search_algorithm::dfs>(); ++it)
 {
    auto current_node = *it;
    
