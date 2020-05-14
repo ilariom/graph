@@ -1,0 +1,248 @@
+
+template<typename T, typename V>
+inline typename graph<T, V>::id_type graph<T, V>::insert(
+    typename std::conditional<std::is_arithmetic<value_type>::value, value_type, 
+    const value_type&>::type val
+)
+{
+    adjs_.emplace_back();
+    radjs_.emplace_back();
+    ws_.emplace_back();
+    rws_.emplace_back();
+    objs_.push_back(val);
+    
+    return objs_.size() - 1;
+}
+
+template<typename T, typename V>
+inline void graph<T, V>::edge(id_type node, id_type child, weight_type w)
+{
+    adjs_[node].push_back(child);
+    radjs_[child].push_back(node);
+    ws_[node][child] = w;
+    rws_[child][node] = w;
+    
+    if (w != 1)
+    {
+        weighted_ = true;
+    }
+}
+
+template<typename T, typename V>
+inline typename graph<T, V>::weight_type graph<T, V>::weight(id_type node, id_type child) const
+{
+    return node < ws_.size() && ws_[node].find(child) != ws_[node].end() ?
+        ws_[node].at(child)
+        : std::numeric_limits<graph<T, V>::weight_type>::max()
+    ;
+}
+
+template<typename T, typename V>
+inline size_t graph<T, V>::size() const
+{
+    size_t t = 0;
+    
+    for (id_type node = 0; node < adjs_.size(); ++node)
+    {
+        t += adjs_[node].size();
+    }
+    
+    return t;
+}
+
+template<typename T, typename V>
+template<typename container_type>
+void graph<T, V>::iterator<container_type>::rewind()
+{
+    curr_ = root_;
+    frontier_.clear();
+    E_.clear();
+    step();
+    prune_ = false;
+}
+
+template<typename T, typename V>
+template<typename container_type>
+inline void graph<T, V>::iterator<container_type>::step()
+{
+    curr_ = frontier_.top();
+    frontier_.pop();
+    E_.insert(curr_);
+    
+    if (curr_ != graph<T, V>::null_id && !prune_)
+    {
+        for (id_type child : children_[curr_])
+        {
+            if (E_.find(child) != E_.end())
+            {
+                continue;
+            }
+            
+            frontier_.push(child);
+        }
+    }
+    
+    prune_ = false;
+}
+
+template<typename T, typename V>
+template<typename container_type>
+inline typename graph<T, V>::template iterator<container_type>& graph<T, V>::iterator<container_type>::operator++()
+{
+    if (frontier_.empty())
+    {
+        curr_ = graph<T, V>::null_id;
+    }
+    else
+    {
+        step();
+    }
+    
+    return *this;
+}
+
+template<typename T, typename V>
+template<typename container_type>
+inline typename graph<T, V>::weight_type graph<T, V>::iterator<container_type>::operator-(const iterator& other) const
+{
+    auto v = *this < other;
+    graph<T, V>::weight_type len = 0;
+    
+    for (auto k = 1; k < v.size(); ++k)
+    {
+        graph<T, V>::id_type node = v[k - 1];
+        graph<T, V>::id_type child = v[k];
+        
+        auto w = G_.weight(node, child);
+        
+        if (w == std::numeric_limits<graph<T, V>::weight_type>::max())
+        {
+            return w;
+        }
+        
+        len += w;
+    }
+    
+    return len;
+}
+
+template<typename T, typename V>
+template<typename container_type>
+inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_type>::operator<(const iterator& other) const
+{
+    if (other.curr_ == graph<T, V>::null_id || curr_ == graph<T, V>::null_id)
+    {
+        return {};
+    }
+    
+    graph<T, V>::nodes_container path;
+    
+    if (!G_.is_weighted())
+    {
+        std::unordered_map<graph<T, V>::id_type, graph<T, V>::id_type> p;
+        std::unordered_map<graph<T, V>::id_type, size_t> level;
+        level[other.curr_] = 0;
+        p[other.curr_] = graph<T, V>::null_id;
+        
+        for (auto it = G_.begin<search_algorithm::bfs>(other.curr_); it != G_.end<search_algorithm::bfs>(); ++it)
+            for (graph<T, V>::id_type child : G_.out(*it))
+            {
+                level[child] = level[*it] + 1;
+                p[child] = *it;
+            }
+        
+        if (p.find(curr_) != p.end())
+        {
+            graph<T, V>::id_type v = curr_;
+            
+            while (v != graph<T, V>::null_id && v != other.curr_)
+            {
+                path.push_back(v);
+                v = p[v];
+            }
+            
+            if (!path.empty())
+            {
+                path.push_back(other.curr_);
+            }
+            
+            std::reverse(path.begin(), path.end());
+        }
+    }
+    else
+    {
+        std::vector<graph<T, V>::weight_type> distance(G_.order());
+        std::vector<graph<T, V>::id_type> predecessor(G_.order());
+        
+        std::fill_n(distance.begin(), G_.order(), std::numeric_limits<graph<T, V>::weight_type>::max());
+        graph<T, V>::id_type null_id = graph<T, V>::null_id;
+        std::fill_n(predecessor.begin(), G_.order(), null_id);
+        
+        distance[other.curr_] = 0;
+        
+        for (auto bfstep = 1; bfstep < G_.order(); ++bfstep)
+            for (auto u = 0; u < G_.order(); ++u)
+                for (auto edgeIdx = 0; edgeIdx < G_.out(u).size(); ++edgeIdx)
+                {
+                    auto v = G_.out(u)[edgeIdx];
+                    
+                    if (distance[u] + G_.weight(u, v) < distance[v])
+                    {
+                        distance[v] = distance[u] + G_.weight(u, v);
+                        predecessor[v] = u;
+                    }
+                }
+                
+        for (auto u = 0; u < G_.order(); ++u)
+            for (auto edgeIdx = 0; edgeIdx < G_.out(u).size(); ++edgeIdx)
+            {
+                auto v = G_.out(u)[edgeIdx];
+                
+                if (distance[u] + G_.weight(u, v) < distance[v])
+                {
+                    return path;
+                }
+            }
+            
+        graph<T, V>::id_type v = curr_;
+        
+        while (v != graph<T, V>::null_id && v != other.curr_)
+        {
+            path.push_back(v);
+            v = predecessor[v];
+        }
+        
+        if (!path.empty())
+        {
+            path.push_back(other.curr_);
+        }
+        
+        std::reverse(path.begin(), path.end());
+    }
+    
+    if (!path.empty() && path.back() != curr_)
+    {
+        path.clear();
+    }
+    
+    return path;
+}
+
+template<typename T, typename V>
+inline typename graph<T, V>::edge_iterator& graph<T, V>::edge_iterator::operator++()
+{
+    ++u_;
+    ++v_;
+    
+    if (v_ >= G_.order())
+    {
+        v_ = 0;
+    }
+    
+    if (u_ >= G_.order())
+    {
+        u_ = graph<T, V>::null_id;
+    }
+    
+    return *this;
+}
