@@ -63,6 +63,8 @@ public:
         void prune() { prune_ = true; }
         void rewind();
         
+        graph<T, V>::id_type peek() const { return frontier_.top(); }
+        
     private:
         void step();
         

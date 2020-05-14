@@ -147,8 +147,8 @@ void graph<T, V>::iterator<container_type>::rewind()
     curr_ = root_;
     frontier_.clear();
     E_.clear();
-    step();
     prune_ = false;
+    step();
 }
 
 template<typename T, typename V>
