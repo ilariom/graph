@@ -23,8 +23,9 @@ G.edge(hello_id, world_id);
 // Graphs are thought to be fast during iterations, but can incur
 // in penalties when erases are performed. Always prefer to erase in batch
 auto wrong_id = G.insert("wrong");
-G.erase(wrong_id);
-G.erase({ wrong_id, hello_id, world_id });
+G.erase(wrong_id); // erases a single node
+G.erase({ wrong_id, hello_id, world_id }); // erases a collection of nodes
+G.erase(hello_id, world_id); // erases the edge (hello_id, world_id)
 
 // You can inspect general properties of the graph
 auto ord = G.order(); // order is the number of nodes
@@ -69,7 +70,7 @@ for (auto it = G.edges_begin(); it != G.edges_end(); ++it)
 }
 
 // Perform a visit through the graph, backed by DFS, starting from root id.
-// BFS is also available
+// BFS is also available. Use rbegin and rend to do a backwards search 
 for (auto it = G.begin<estd::search_algorithm::dfs>(root); it != G.end<estd::search_algorithm::dfs>(); ++it)
 {
    auto current_node = *it;
@@ -81,18 +82,20 @@ for (auto it = G.begin<estd::search_algorithm::dfs>(root); it != G.end<estd::sea
    it.prune();
 }
 
-// Giving two iterators start and goal:
+// You can make path calculations, given two search_iterators
+auto start = G.begin<estd::search_algorithm::dfs>(start_id);
+auto goal = G.begin<estd::search_algorithm::dfs>(goal_id);
 auto path = start > goal; // gets the shortest path from start to goal
 auto dist = goal - start; // gets the shortest distance between start and goal
 ```
 
 ## Coming Soon
-- Adds UCS, beam and A* to search algorithms
-- Adds batch operator for all shortest paths from a node
-- Renames iterator to search_iterator
-- Moves path calculation from search_iterator to node_iterator
-- Adds has_next() to search_iterator
-- Adds a way to remove edges (sorry, I just forgot that :D) 
+- Add UCS, beam and A* to search algorithms
+- Add batch operator for all shortest paths from a node
+- Add an explicit path type
+- ~Rename iterator to search_iterator~ Done!
+- ~Add has_next() to search_iterator~ Done!
+- ~Add a way to remove edges (sorry, I just forgot that :D)~ Done!
 - Find a fancier name for the project
 
 ## Integration
