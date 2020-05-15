@@ -105,6 +105,24 @@ inline void graph<T, V>::erase(const nodes_container& nodes)
 }
 
 template<typename T, typename V>
+void graph<T, V>::erase(id_type first, id_type second)
+{
+    auto it = std::find(adjs_[first].begin(), adjs_[first].end(), second);
+
+    if (it != adjs_[first].end())
+    {
+        adjs_[first].erase(it);
+    }
+    
+    auto rit = std::find(radjs_[second].begin(), radjs_[second].end(), first);
+
+    if (rit != radjs_[second].end())
+    {
+        radjs_[second].erase(rit);
+    }
+}
+
+template<typename T, typename V>
 inline void graph<T, V>::edge(id_type node, id_type child, weight_type w)
 {
     adjs_[node].push_back(child);
@@ -142,7 +160,7 @@ inline size_t graph<T, V>::size() const
 
 template<typename T, typename V>
 template<typename container_type>
-void graph<T, V>::iterator<container_type>::rewind()
+void graph<T, V>::search_iterator<container_type>::rewind()
 {
     curr_ = root_;
     frontier_.clear();
@@ -153,7 +171,7 @@ void graph<T, V>::iterator<container_type>::rewind()
 
 template<typename T, typename V>
 template<typename container_type>
-inline void graph<T, V>::iterator<container_type>::step()
+inline void graph<T, V>::search_iterator<container_type>::step()
 {
     curr_ = frontier_.top();
     frontier_.pop();
@@ -177,7 +195,7 @@ inline void graph<T, V>::iterator<container_type>::step()
 
 template<typename T, typename V>
 template<typename container_type>
-inline typename graph<T, V>::template iterator<container_type>& graph<T, V>::iterator<container_type>::operator++()
+inline typename graph<T, V>::template search_iterator<container_type>& graph<T, V>::search_iterator<container_type>::operator++()
 {
     if (frontier_.empty())
     {
@@ -193,7 +211,7 @@ inline typename graph<T, V>::template iterator<container_type>& graph<T, V>::ite
 
 template<typename T, typename V>
 template<typename container_type>
-inline typename graph<T, V>::weight_type graph<T, V>::iterator<container_type>::operator-(const iterator& other) const
+inline typename graph<T, V>::weight_type graph<T, V>::search_iterator<container_type>::operator-(const search_iterator& other) const
 {
     auto v = *this < other;
     graph<T, V>::weight_type len = 0;
@@ -218,7 +236,7 @@ inline typename graph<T, V>::weight_type graph<T, V>::iterator<container_type>::
 
 template<typename T, typename V>
 template<typename container_type>
-inline typename graph<T, V>::nodes_container graph<T, V>::iterator<container_type>::operator<(const iterator& other) const
+inline typename graph<T, V>::nodes_container graph<T, V>::search_iterator<container_type>::operator<(const search_iterator& other) const
 {
     if (other.curr_ == graph<T, V>::null_id || curr_ == graph<T, V>::null_id)
     {
@@ -375,12 +393,23 @@ inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator
 }
 
 template<typename T, typename V>
-inline typename graph<T, V>::edge_iterator& graph<T, V>::edge_iterator::operator++()
+inline bool graph<T, V>::edge_iterator::ensure_validity()
 {
     if (it_ == G_.nodes_end())
     {
         u_ = graph<T, V>::null_id;
         v_ = graph<T, V>::null_id;
+        return false;
+    }
+
+    return true;
+}
+
+template<typename T, typename V>
+inline typename graph<T, V>::edge_iterator& graph<T, V>::edge_iterator::operator++()
+{
+    if (!ensure_validity())
+    {
         return *this;
     }
 
@@ -391,6 +420,19 @@ inline typename graph<T, V>::edge_iterator& graph<T, V>::edge_iterator::operator
     else
     {
         u_ = *it_;
+
+        while (G_.out(u_).empty())
+        {
+            ++it_;
+
+            if (!ensure_validity())
+            {
+                return *this;
+            }
+
+            u_ = *it_;
+        }
+
         adjs_idx_ = 0;
         v_ = G_.out(u_)[adjs_idx_++];
 

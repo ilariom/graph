@@ -28,10 +28,10 @@ public:
     
 public:
     template<typename container_type>
-    class iterator
+    class search_iterator
     {
     public:
-        iterator(
+        search_iterator(
             const graph<T, V>& G,
             const std::vector<std::vector<graph<T, V>::id_type>>& children,
             graph<T, V>::id_type root = graph<T, V>::null_id
@@ -42,7 +42,7 @@ public:
             step();
         }
         
-        iterator(const iterator& it)
+        search_iterator(const search_iterator& it)
             : G_(it.G_), children_(it.children_), curr_(it.curr_), root_(it.root_)
         {
             frontier_.set_graph(G_);
@@ -52,18 +52,19 @@ public:
         
     public:
         graph<T, V>::id_type operator*() const { return curr_; }
-        iterator& operator++();
-        graph<T, V>::weight_type operator-(const iterator& other) const;
-        std::vector<graph<T, V>::id_type> operator<(const iterator& other) const;
-        std::vector<graph<T, V>::id_type> operator>(const iterator& other) const { return other < *this; }
+        search_iterator& operator++();
+        graph<T, V>::weight_type operator-(const search_iterator& other) const;
+        std::vector<graph<T, V>::id_type> operator<(const search_iterator& other) const;
+        std::vector<graph<T, V>::id_type> operator>(const search_iterator& other) const { return other < *this; }
         
-        bool operator==(const iterator& other) const { return curr_ == other.curr_; }
-        bool operator!=(const iterator& other) const { return !(*this == other); }
+        bool operator==(const search_iterator& other) const { return curr_ == other.curr_; }
+        bool operator!=(const search_iterator& other) const { return !(*this == other); }
         
         void prune() { prune_ = true; }
         void rewind();
         
         graph<T, V>::id_type peek() const { return frontier_.top(); }
+        bool has_next() const { return !frontier_.empty(); }
         
     private:
         void step();
@@ -118,6 +119,9 @@ public:
         
         bool operator==(const edge_iterator& other) const { return u_ == other.u_ && v_ == other.v_; }
         bool operator!=(const edge_iterator& other) const { return !(*this == other); }
+
+    private:
+        bool ensure_validity();
         
     private:
         const graph<T, V>& G_;
@@ -131,6 +135,7 @@ public:
     id_type insert(typename std::conditional<std::is_arithmetic<value_type>::value, value_type, const value_type&>::type);
     void erase(id_type);
     void erase(const nodes_container&);
+    void erase(id_type, id_type);
     size_type degree(id_type node) const { return in(node).size() + out(node).size(); }
     size_type order() const { return objs_.size() - removed_nodes_; }
     size_type size() const;
@@ -143,16 +148,16 @@ public:
     const T& operator[](id_type node) const { return objs_[node]; }
     
     template<typename search_algorithm>
-    iterator<search_algorithm> begin(id_type root) const { return iterator<search_algorithm> { *this, adjs_, root }; }
+    search_iterator<search_algorithm> begin(id_type root) const { return search_iterator<search_algorithm> { *this, adjs_, root }; }
     
     template<typename search_algorithm>
-    iterator<search_algorithm> end() const { return iterator<search_algorithm> { *this, adjs_ }; }
+    search_iterator<search_algorithm> end() const { return search_iterator<search_algorithm> { *this, adjs_ }; }
     
     template<typename search_algorithm>
-    iterator<search_algorithm> rbegin(id_type root) const { return iterator<search_algorithm> { *this, radjs_, root }; }
+    search_iterator<search_algorithm> rbegin(id_type root) const { return search_iterator<search_algorithm> { *this, radjs_, root }; }
     
     template<typename search_algorithm>
-    iterator<search_algorithm> rend() const { return iterator<search_algorithm> { *this, radjs_ }; }
+    search_iterator<search_algorithm> rend() const { return search_iterator<search_algorithm> { *this, radjs_ }; }
     
     void edge(id_type node, id_type child, weight_type w = 1);
     weight_type weight(id_type node, id_type child) const;
