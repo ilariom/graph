@@ -14,7 +14,7 @@ namespace estd
 
 #include "search_algorithm.inl"
 
-template<typename T, typename V = ssize_t>
+template <typename T, typename V = ssize_t>
 class graph
 {
 public:
@@ -23,11 +23,38 @@ public:
     using size_type = size_t;
     using id_type = size_t;
     using nodes_container = std::vector<id_type>;
+    using parent_array = std::vector<id_type>;
+    using path_array = std::vector<id_type>;
     
     static constexpr const id_type null_id = std::numeric_limits<id_type>::max();
     
 public:
-    template<typename container_type>
+    class path
+    {
+    public:
+        static constexpr const weight_type inf = std::numeric_limits<weight_type>::max();
+
+    public:
+        path(
+            parent_array&& parents, 
+            std::vector<weight_type>&& distances, 
+            graph<T, V>::id_type root
+        )
+            : parents_(parents), distances_(distances), root_(root)
+        { }
+
+    public:
+        graph<T, V>::id_type root() const { return root_; }
+        path_array path_to(id_type node) const;
+        weight_type distance_to(id_type node) const { return distances_[node]; }
+
+    private : 
+        parent_array parents_;
+        std::vector<weight_type> distances_;
+        graph<T, V>::id_type root_;
+    };
+
+    template <typename container_type>
     class search_iterator
     {
     public:
@@ -62,9 +89,8 @@ public:
         
         void prune() { prune_ = true; }
         void rewind();
-        
-        graph<T, V>::id_type peek() const { return frontier_.top(); }
-        bool has_next() const { return !frontier_.empty(); }
+
+        graph<T, V>::id_type peek() const { return frontier_.empty() ? graph<T, V>::null_id : frontier_.top(); }
         
     private:
         void step();
@@ -147,16 +173,16 @@ public:
     T& operator[](id_type node) { return objs_[node]; }
     const T& operator[](id_type node) const { return objs_[node]; }
     
-    template<typename search_algorithm>
+    template <typename search_algorithm>
     search_iterator<search_algorithm> begin(id_type root) const { return search_iterator<search_algorithm> { *this, adjs_, root }; }
     
-    template<typename search_algorithm>
+    template <typename search_algorithm>
     search_iterator<search_algorithm> end() const { return search_iterator<search_algorithm> { *this, adjs_ }; }
     
-    template<typename search_algorithm>
+    template <typename search_algorithm>
     search_iterator<search_algorithm> rbegin(id_type root) const { return search_iterator<search_algorithm> { *this, radjs_, root }; }
     
-    template<typename search_algorithm>
+    template <typename search_algorithm>
     search_iterator<search_algorithm> rend() const { return search_iterator<search_algorithm> { *this, radjs_ }; }
     
     void edge(id_type node, id_type child, weight_type w = 1);
@@ -182,7 +208,7 @@ private:
     bool weighted_ = false;
 };
 
-template<typename T, typename V>
+template <typename T, typename V>
 class undirected_graph : public graph<T, V>
 {
 public:
@@ -200,16 +226,16 @@ public:
     }
 };
 
-template<typename value_type, typename weight_type>
+template <typename value_type, typename weight_type>
 using weighted_digraph = graph<value_type, weight_type>;
 
-template<typename value_type>
+template <typename value_type>
 using digraph = graph<value_type>;
 
-template<typename value_type, typename weight_type>
+template <typename value_type, typename weight_type>
 using weighted_undirected_graph = undirected_graph<value_type, weight_type>;
 
-template<typename T>
+template <typename T>
 class tree : private graph<T>
 {
 public:
@@ -241,6 +267,12 @@ public:
     using graph<T>::operator[];
     using graph<T>::is_valid;
 };
+
+template <typename T, typename V>
+typename graph<T, V>::path bfs_distance(const graph<T, V>& G, typename graph<T, V>::id_type root);
+
+template <typename T, typename V>
+typename graph<T, V>::path bellman_ford(const graph<T, V>& G, typename graph<T, V>::id_type root);
 
 #include "graph.inl"
 
