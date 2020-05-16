@@ -4,6 +4,17 @@ inline typename graph<T, V>::id_type graph<T, V>::insert(
     const value_type&>::type val
 )
 {
+    if (!invalid_nodes_.empty())
+    {
+        auto it = invalid_nodes_.cbegin();
+        auto node = *it;
+        invalid_nodes_.erase(it);
+        objs_[node] = val;
+        removed_nodes_--;
+
+        return node;
+    }
+
     adjs_.emplace_back();
     radjs_.emplace_back();
     ws_.emplace_back();
@@ -91,7 +102,7 @@ inline void graph<T, V>::erase(const nodes_container& nodes)
         }
     }
 
-    removed_nodes_ = order() - sz;
+    removed_nodes_ += order() - sz;
 
     repop_nodes(adjs_, nodes);
     repop_nodes(radjs_, nodes);
