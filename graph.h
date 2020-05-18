@@ -32,9 +32,6 @@ public:
     class path
     {
     public:
-        static constexpr const weight_type inf = std::numeric_limits<weight_type>::max();
-
-    public:
         path(
             parent_array&& parents, 
             std::vector<weight_type>&& distances, 
@@ -42,6 +39,8 @@ public:
         )
             : parents_(parents), distances_(distances), root_(root)
         { }
+
+        path() = default;
 
     public:
         graph<T, V>::id_type root() const { return root_; }
@@ -83,6 +82,7 @@ public:
         graph<T, V>::weight_type operator-(const search_iterator& other) const;
         std::vector<graph<T, V>::id_type> operator<(const search_iterator& other) const;
         std::vector<graph<T, V>::id_type> operator>(const search_iterator& other) const { return other < *this; }
+        graph<T, V>::path operator>(const graph<T, V>&) const;
         
         bool operator==(const search_iterator& other) const { return curr_ == other.curr_; }
         bool operator!=(const search_iterator& other) const { return !(*this == other); }

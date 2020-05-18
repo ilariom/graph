@@ -263,6 +263,23 @@ inline typename graph<T, V>::nodes_container graph<T, V>::search_iterator<contai
 }
 
 template <typename T, typename V>
+template <typename container_type>
+inline typename graph<T, V>::path graph<T, V>::search_iterator<container_type>::operator>(const graph<T, V>& G) const
+{
+    if (curr_ == graph<T, V>::null_id)
+    {
+        return {};
+    }
+    
+    if (G_.is_weighted())
+    {
+        return bellman_ford(G_, curr_);
+    }
+
+    return bfs_distance(G_, curr_);
+}
+
+template <typename T, typename V>
 inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator++()
 {
      ++v_;
@@ -373,7 +390,6 @@ inline typename graph<T, V>::path_array graph<T, V>::path::path_to(typename grap
 {
     typename graph<T, V>::path_array p;
     typename graph<T, V>::id_type v = node;
-    int node_passed = 0;
         
     while (v != graph<T, V>::null_id)
     {
@@ -381,11 +397,6 @@ inline typename graph<T, V>::path_array graph<T, V>::path::path_to(typename grap
         v = parents_[v];
 
         if (v == node)
-        {
-            node_passed++;
-        }
-
-        if (node_passed >= 1)
         {
             break;
         }
