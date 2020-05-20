@@ -75,7 +75,7 @@ for (auto it = G.begin<estd::search_algorithm::dfs>(root); it != G.end<estd::sea
 {
    auto current_node = *it;
    
-   // Peek next node, if it exists
+   // Peek next node, if it exists. If not, next_node will be equal to null_id
    auto next_node = it.peek();
 
    // Prune the visit at the next node. This automatically resets after first use
@@ -87,14 +87,18 @@ auto start = G.begin<estd::search_algorithm::dfs>(start_id);
 auto goal = G.begin<estd::search_algorithm::dfs>(goal_id);
 auto path = start > goal; // gets the shortest path from start to goal
 auto dist = goal - start; // gets the shortest distance between start and goal
+
+// You can also compute the shortest path between one node and all the others.
+auto path_to_G = start > G;
+auto path_array = path_to_G.path_to(goal); // path_array == path
+auto path_dist = path_to_G.distance_to(goal); // path_dist == dist
 ```
 
 ## Coming Soon
 - Add UCS, beam and A* to search algorithms
-- Add batch operator for all shortest paths from a node
-- Add an explicit path type
+- ~Add batch operator for all shortest paths from a node~ Done!
+- ~Add an explicit path type~ Done!
 - ~Rename iterator to search_iterator~ Done!
-- ~Add has_next() to search_iterator~ Done!
 - ~Add a way to remove edges (sorry, I just forgot that :D)~ Done!
 - Find a fancier name for the project
 
