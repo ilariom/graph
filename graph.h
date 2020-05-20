@@ -73,7 +73,7 @@ public:
     private : 
         parent_array parents_;
         std::vector<weight_type> distances_;
-        graph<T, V>::id_type root_;
+        graph<T, V>::id_type root_ = graph<T, V>::null_id;
     };
 
     template <typename container_type>
@@ -247,6 +247,8 @@ public:
         graph<T, V>::edge(node, o, w);
         graph<T, V>::edge(o, node, w);
     }
+
+    const nodes_container& adjs(id_type node) const { return graph<T, V>::out(node); }
 };
 
 template <typename value_type, typename weight_type>

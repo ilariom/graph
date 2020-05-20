@@ -224,42 +224,20 @@ template <typename T, typename V>
 template <typename container_type>
 inline typename graph<T, V>::weight_type graph<T, V>::search_iterator<container_type>::operator-(const search_iterator& other) const
 {
-    auto v = *this < other;
-    graph<T, V>::weight_type len = 0;
-    
-    for (auto k = 1; k < v.size(); ++k)
-    {
-        graph<T, V>::id_type node = v[k - 1];
-        graph<T, V>::id_type child = v[k];
-        
-        auto w = G_.weight(node, child);
-        
-        if (w == std::numeric_limits<graph<T, V>::weight_type>::max())
-        {
-            return w;
-        }
-        
-        len += w;
-    }
-    
-    return len;
+    return (other > G_).distance_to(curr_);
 }
 
 template <typename T, typename V>
 template <typename container_type>
 inline typename graph<T, V>::nodes_container graph<T, V>::search_iterator<container_type>::operator<(const search_iterator& other) const
 {
-    if (other.curr_ == graph<T, V>::null_id || curr_ == graph<T, V>::null_id)
+    if (*other == graph<T, V>::null_id)
     {
         return {};
     }
-    
-    if (G_.is_weighted())
-    {
-        return bellman_ford(G_, other.curr_).path_to(curr_);
-    }
 
-    return bfs_distance(G_, other.curr_).path_to(curr_);
+    auto path = other > G_;
+    return path.path_to(curr_);
 }
 
 template <typename T, typename V>
@@ -279,61 +257,37 @@ inline typename graph<T, V>::path graph<T, V>::search_iterator<container_type>::
     return bfs_distance(G_, curr_);
 }
 
+#define NODE_ITER_OP(slide) while (!G_.is_valid(v_) && v_ < G_.order()) slide; if (v_ >= G_.order()) v_ = graph<T, V>::null_id; return *this
+
 template <typename T, typename V>
 inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator++()
 {
-     ++v_;
-    while (!G_.is_valid(v_)) ++v_;
-
-    if (v_ >= G_.order())
-    {
-        v_ = graph<T, V>::null_id;
-    }
-
-    return *this;
+    ++v_;
+    NODE_ITER_OP(++v_);
 }
 
 template <typename T, typename V>
 inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator--()
 {
     --v_;
-    while (!G_.is_valid(v_)) --v_;
-    
-    if (v_ >= G_.order())
-    {
-        v_ = graph<T, V>::null_id;
-    }
-
-    return *this;
+    NODE_ITER_OP(--v_);
 }
 
 template <typename T, typename V>
 inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator+(size_t n)
 {
     v_ += n;
-    while (!G_.is_valid(v_)) ++v_;
-
-    if (v_ >= G_.order())
-    {
-        v_ = graph<T, V>::null_id;
-    }
-
-    return *this;
+    NODE_ITER_OP(++v_);
 }
 
 template <typename T, typename V>
 inline typename graph<T, V>::node_iterator& graph<T, V>::node_iterator::operator-(size_t n)
 {
     v_ -= n;
-    while (!G_.is_valid(v_)) ++v_;
-
-    if (v_ >= G_.order())
-    {
-        v_ = graph<T, V>::null_id;
-    }
-
-    return *this;
+    NODE_ITER_OP(++v_);
 }
+
+#undef NODE_ITER_OP
 
 template <typename T, typename V>
 inline bool graph<T, V>::edge_iterator::ensure_validity()
