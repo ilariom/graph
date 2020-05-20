@@ -88,10 +88,10 @@ auto goal = G.begin<estd::search_algorithm::dfs>(goal_id);
 auto path = start > goal; // gets the shortest path from start to goal
 auto dist = goal - start; // gets the shortest distance between start and goal
 
-// You can also compute the shortest path between one node and all the others.
+// You can also compute the shortest paths between one node and all the others.
 auto path_to_G = start > G;
-auto path_array = path_to_G.path_to(goal); // path_array == path
-auto path_dist = path_to_G.distance_to(goal); // path_dist == dist
+auto path_array = path_to_G.path_to(*goal); // path_array == path
+auto path_dist = path_to_G.distance_to(*goal); // path_dist == dist
 ```
 
 ## Coming Soon
